@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于协同过滤的推荐智慧工作台</title>
+    <style>
+        :root {
+            --primary-color: #2b5c8f;
+            --secondary-color: #1e90ff;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 20px; }
+        header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 20px 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        header p { font-size: 0.85rem; opacity: 0.9; }
+        
+        /* Tabs 滚动适应 */
+        .tabs-wrapper { overflow-x: auto; white-space: nowrap; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tabs-wrapper::-webkit-scrollbar { display: none; }
+        .tabs { display: flex; min-width: 100%; }
+        .tab { flex: 1; padding: 15px 15px; text-align: center; font-size: 0.9rem; cursor: pointer; border-bottom: 3px solid transparent; color: #666; transition: all 0.3s; }
+        .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: bold; background: #f8fbfe; }
+        
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .section { display: none; animation: fadeIn 0.4s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .card h2 { font-size: 1.1rem; color: var(--primary-color); margin-bottom: 15px; display: flex; align-items: center; }
+        .card h2::before { content: ''; display: inline-block; width: 4px; height: 16px; background: var(--secondary-color); margin-right: 8px; border-radius: 2px; }
+        
+        /* 折叠面板样式 */
+        details { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        summary { padding: 12px 15px; font-weight: bold; font-size: 0.95rem; cursor: pointer; list-style: none; position: relative; color: var(--primary-color); }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: '+'; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; font-weight: normal; }
+        details[open] summary::after { content: '-'; }
+        .details-content { padding: 0 15px 15px; font-size: 0.85rem; color: #555; border-top: 1px solid #eee; margin-top: 5px; padding-top: 10px; }
+        
+        .question { margin-bottom: 20px; }
+        .question p { font-weight: bold; margin-bottom: 10px; font-size: 0.95rem; }
+        .options label { display: block; padding: 12px 15px; background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .options label:hover { background: #f0f7ff; border-color: #b3d4fc; }
+        .options input[type="radio"], .options input[type="checkbox"] { margin-right: 10px; }
+        
+        .btn { display: block; width: 100%; padding: 12px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
+        .btn:hover { background: #1c7ed6; }
+        .btn-outline { background: transparent; color: var(--secondary-color); border: 2px solid var(--secondary-color); }
+        .btn-outline:hover { background: #e7f5ff; }
+        
+        .feedback { margin-top: 10px; font-size: 0.9rem; padding: 10px; border-radius: 8px; display: none; }
+        .feedback.success { display: block; background: #d4edda; color: #155724; }
+        .feedback.error { display: block; background: #f8d7da; color: #721c24; }
+        
+        .matrix-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.85rem; text-align: center; }
+        .matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 8px 4px; }
+        .matrix-table th { background: #f2f2f2; }
+        .highlight { color: #dc3545; font-weight: bold; }
+        
+        .calc-step { background: #f8f9fa; border-left: 4px solid var(--secondary-color); padding: 10px; margin-bottom: 10px; font-size: 0.85rem; display: none; }
+        .calc-step.show { display: block; }
+        
+        .word-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding: 10px; background: #fafafa; border-radius: 8px; min-height: 100px; align-content: flex-start; }
+        .word-tag { background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; animation: popIn 0.3s ease; }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        
+        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; margin-bottom: 10px; }
+
+        /* AI 聊天界面样式 */
+        .chat-container { display: flex; flex-direction: column; height: 400px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
+        .message.bot { align-self: flex-start; background: #e7f5ff; color: #333; border-bottom-left-radius: 2px; }
+        .message.user { align-self: flex-end; background: var(--secondary-color); color: white; border-bottom-right-radius: 2px; }
+        .chat-input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #eee; }
+        .chat-input-area input { flex: 1; margin-bottom: 0; border-radius: 20px 0 0 20px; border-right: none; }
+        .chat-input-area button { padding: 0 20px; background: var(--secondary-color); color: white; border: none; border-radius: 0 20px 20px 0; font-weight: bold; cursor: pointer; }
+        .quick-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .quick-q { background: #f0f7ff; color: var(--secondary-color); padding: 6px 12px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; border: 1px solid #b3d4fc; transition: all 0.2s; }
+        .quick-q:hover { background: var(--secondary-color); color: white; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>基于协同过滤的推荐智慧工作台</h1>
+    <p>管理决策方法 · 协同过滤章节</p>
+</header>
+
+<div class="tabs-wrapper">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">知识全景</div>
+        <div class="tab" onclick="switchTab(1)">温故知新</div>
+        <div class="tab" onclick="switchTab(2)">实战演练</div>
+        <div class="tab" onclick="switchTab(3)">思维碰撞</div>
+        <div class="tab" onclick="switchTab(4)">AI小助手</div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 模块0：知识全景回顾 -->
+    <div class="section active" id="section-0">
+        <div class="card">
+            <h2>协同过滤全流程梳理</h2>
+            <p style="font-size: 0.85rem; margin-bottom: 15px; color: #666;">点击下方模块，快速回顾本节课的核心知识点。</p>
+            
+            <details open>
+                <summary>1. 用户兴趣建模（数据从哪来？）</summary>
+                <div class="details-content">
+                    <b>行为即痕迹：</b>点赞(1分)、评论(2分)、收藏(3分)、转发(4分)。<br>
+                    <b>向量表示：</b>将用户对不同物品的评分转化为向量，如 \(u_1=(4,4,4)\)。
+                </div>
+            </details>
+            <details>
+                <summary>2. 寻找相似用户（谁和我像？）</summary>
+                <div class="details-content">
+                    <b>核心算法：</b>余弦相似度。<br>
+                    <b>计算公式：</b>\(\cos\theta = \frac{A \cdot B}{|A| \times |B|}\)。<br>
+                    <b>几何意义：</b>将评分向量映射到空间，计算向量夹角的余弦值。夹角越小，兴趣越相似。
+                </div>
+            </details>
+            <details>
+                <summary>3. 预测用户兴趣（我还喜欢什么？）</summary>
+                <div class="details-content">
+                    <b>加权预测法：</b>利用相似用户的评分进行加权平均。<br>
+                    <b>公式：</b>\(r_{k,x} = \frac{\sum (S_{k,m} \times R_{m,x})}{\sum S_{k,m}}\)。相似度越高，权重越大。
+                </div>
+            </details>
+            <details>
+                <summary>4. 推荐生成与挑战（最终推荐什么？）</summary>
+                <div class="details-content">
+                    <b>推荐策略：</b>根据预测评分由高到低排序推荐。<br>
+                    <b>面临挑战：</b><br>
+                    - <b>冷启动问题：</b>新用户无历史数据（解决方法：主动询问、反馈试探、跨域迁移）。<br>
+                    - <b>兴趣漂移：</b>用户兴趣随时间变化（解决方法：引入时间衰减因子、实时更新模型）。
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- 模块1：温故知新 -->
+    <div class="section" id="section-1">
+        <div class="card">
+            <h2>快速回顾</h2>
+            <div class="question">
+                <p>1. 基于用户的协同过滤，核心步骤是什么？</p>
+                <div class="options">
+                    <label><input type="radio" name="q1" value="A"> A. 找相似物品 -> 预测评分 -> 推荐</label>
+                    <label><input type="radio" name="q1" value="B"> B. 找相似用户 -> 预测评分 -> 推荐</label>
+                    <label><input type="radio" name="q1" value="C"> C. 找相似用户 -> 预测物品 -> 推荐</label>
+                </div>
+                <div class="feedback" id="fb-q1"></div>
+            </div>
+            <div class="question">
+                <p>2. 衡量用户相似度最常用的方法是什么？</p>
+                <div class="options">
+                    <label><input type="radio" name="q2" value="A"> A. 欧氏距离</label>
+                    <label><input type="radio" name="q2" value="B"> B. 余弦相似度</label>
+                    <label><input type="radio" name="q2" value="C"> C. 皮尔逊系数</label>
+                </div>
+                <div class="feedback" id="fb-q2"></div>
+            </div>
+            <button class="btn" onclick="checkQuiz()">提交答案</button>
+        </div>
+    </div>
+
+    <!-- 模块2：实战演练（作业1） -->
+    <div class="section" id="section-2">
+        <div class="card">
+            <h2>作业1：评分预测</h2>
+            <p style="font-size: 0.85rem; margin-bottom: 10px; color: #666;">已知用户对物品的评分矩阵（? 为待预测评分）：</p>
+            <table class="matrix-table">
+                <tr><th></th><th>物品a</th><th>物品b</th><th>物品c</th><th>物品d</th><th>物品e</th></tr>
+                <tr><td>用户A</td><td>3.5</td><td>4</td><td>4.5</td><td>2</td><td>3</td></tr>
+                <tr><td>用户B</td><td>4</td><td>3</td><td>2.5</td><td>4.5</td><td>3.5</td></tr>
+                <tr><td>用户C</td><td>2</td><td>4</td><td>3.5</td><td>3</td><td>4.5</td></tr>
+                <tr><td><b>用户D</b></td><td>4.5</td><td>3</td><td class="highlight">?</td><td>4</td><td class="highlight">?</td></tr>
+            </table>
+            
+            <div class="question">
+                <p>Step 1: 寻找相似用户。根据用户D在a,b,d上的评分，选出最相似的2位用户：</p>
+                <div class="options">
+                    <label><input type="checkbox" name="sim" value="A"> 用户A</label>
+                    <label><input type="checkbox" name="sim" value="B"> 用户B</label>
+                    <label><input type="checkbox" name="sim" value="C"> 用户C</label>
+                </div>
+                <button class="btn btn-outline" onclick="checkSimilarity()">验证相似度</button>
+                <div class="calc-step" id="calc-sim">
+                    <b>计算过程：</b><br>
+                    D与A的余弦相似度 ≈ 0.936<br>
+                    D与B的余弦相似度 ≈ 0.994<br>
+                    D与C的余弦相似度 ≈ 0.911<br>
+                    <b>结论：</b>用户A和用户B最相似。
+                </div>
+            </div>
+
+            <div class="question" id="step2" style="display:none;">
+                <p>Step 2: 预测评分。使用A和B的加权平均，预测D对物品c和e的评分：</p>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>预测c的评分：</label>
+                        <input type="number" id="pred-c" placeholder="如 3.47" step="0.01">
+                    </div>
+                    <div style="flex:1;">
+                        <label>预测e的评分：</label>
+                        <input type="number" id="pred-e" placeholder="如 3.26" step="0.01">
+                    </div>
+                </div>
+                <button class="btn" onclick="checkPrediction()">提交预测</button>
+                <div class="calc-step" id="calc-pred">
+                    <b>计算公式：</b> r = (S_A * R_A + S_B * R_B) / (S_A + S_B)<br>
+                    预测c = (0.936 * 4.5 + 0.994 * 2.5) / (0.936 + 0.994) ≈ <b>3.47</b><br>
+                    预测e = (0.936 * 3 + 0.994 * 3.5) / (0.936 + 0.994) ≈ <b>3.26</b>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块3：思维碰撞（作业2） -->
+    <div class="section" id="section-3">
+        <div class="card">
+            <h2>作业2：思维碰撞</h2>
+            <div class="question">
+                <p>1. 现实中的用户兴趣不断变化（如大一关注游戏，大四关注求职）。仅依据“过去和谁相似”，还能准确预测“现在喜欢什么”吗？</p>
+                <div class="options">
+                    <label><input type="radio" name="q3" value="A"> A. 能，兴趣本质不会变</label>
+                    <label><input type="radio" name="q3" value="B"> B. 不能，兴趣随时间漂移</label>
+                    <label><input type="radio" name="q3" value="C"> C. 不一定，取决于变化程度</label>
+                </div>
+                <div class="feedback" id="fb-q3"></div>
+            </div>
+            <div class="question">
+                <p>2. 基于用户的协同过滤该如何跟上用户兴趣的变化？请留下你的关键词：</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="word-input" placeholder="输入你的关键词...">
+                    <button class="btn" style="width: auto; padding: 0 20px;" onclick="addWord()">提交</button>
+                </div>
+                <div class="word-cloud" id="word-cloud"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块4：AI小助手 -->
+    <div class="section" id="section-4">
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 15px; background: var(--primary-color); color: white;">
+                <h2 style="color: white; margin-bottom: 0;">🤖 协同过滤 AI 小助手</h2>
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">你可以问我关于本节课的任何问题</p>
+            </div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message bot">你好！我是协同过滤推荐算法的AI小助手。你可以问我关于余弦相似度、加权预测、冷启动或兴趣漂移的问题。请问有什么可以帮你的？</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="输入你的问题..." onkeypress="handleChatEnter(event)">
+                    <button onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+            <div style="padding: 10px 15px 15px;">
+                <p style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">试试这样问：</p>
+                <div class="quick-questions">
+                    <span class="quick-q" onclick="quickAsk('什么是余弦相似度？')">什么是余弦相似度？</span>
+                    <span class="quick-q" onclick="quickAsk('怎么解决冷启动问题？')">怎么解决冷启动？</span>
+                    <span class="quick-q" onclick="quickAsk('兴趣发生变化了怎么办？')">兴趣变化怎么办？</span>
+                    <span class="quick-q" onclick="quickAsk('加权预测的公式是什么？')">加权预测公式？</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 切换Tab
+    function switchTab(index) {
+        document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === index));
+        document.querySelectorAll('.section').forEach((s, i) => s.classList.toggle('active', i === index));
+    }
+
+    // 模块1：简答题校验
+    function checkQuiz() {
+        const q1 = document.querySelector('input[name="q1"]:checked');
+        const q2 = document.querySelector('input[name="q2"]:checked');
+        const fb1 = document.getElementById('fb-q1');
+        const fb2 = document.getElementById('fb-q2');
+        
+        if (!q1) { fb1.className = 'feedback error'; fb1.innerText = '请回答第1题'; fb1.style.display = 'block'; }
+        else if (q1.value === 'B') { fb1.className = 'feedback success'; fb1.innerText = '正确！基于用户的核心是“找相似用户”。'; fb1.style.display = 'block'; }
+        else { fb1.className = 'feedback error'; fb1.innerText = '错误，请再想想。'; fb1.style.display = 'block'; }
+
+        if (!q2) { fb2.className = 'feedback error'; fb2.innerText = '请回答第2题'; fb2.style.display = 'block'; }
+        else if (q2.value === 'B') { fb2.className = 'feedback success'; fb2.innerText = '正确！余弦相似度是常用方法。'; fb2.style.display = 'block'; }
+        else { fb2.className = 'feedback error'; fb2.innerText = '错误，请再想想。'; fb2.style.display = 'block'; }
+    }
+
+    // 模块2：相似度验证
+    function checkSimilarity() {
+        const checked = document.querySelectorAll('input[name="sim"]:checked');
+        const values = Array.from(checked).map(c => c.value);
+        const calcStep = document.getElementById('calc-sim');
+        
+        if (values.includes('A') && values.includes('B') && values.length === 2) {
+            calcStep.classList.add('show');
+            document.getElementById('step2').style.display = 'block';
+        } else {
+            alert('选择有误！请确保选择2位用户。提示：余弦相似度计算需考虑向量夹角。');
+            calcStep.classList.remove('show');
+            document.getElementById('step2').style.display = 'none';
+        }
+    }
+
+    // 模块2：预测结果校验
+    function checkPrediction() {
+        const c = parseFloat(document.getElementById('pred-c').value);
+        const e = parseFloat(document.getElementById('pred-e').value);
+        const calcStep = document.getElementById('calc-pred');
+        
+        const cOK = Math.abs(c - 3.47) < 0.05;
+        const eOK = Math.abs(e - 3.26) < 0.05;
+        
+        if (cOK && eOK) {
+            alert('预测正确！完美掌握加权预测公式！');
+            calcStep.classList.add('show');
+        } else {
+            alert('预测有偏差。请检查：是否使用了相似用户A和B的评分？加权公式的分母是相似度之和。');
+            calcStep.classList.add('show');
+        }
+    }
+
+    // 模块3：词云互动
+    function addWord() {
+        const input = document.getElementById('word-input');
+        const word = input.value.trim();
+        if (!word) return;
+        
+        const cloud = document.getElementById('word-cloud');
+        const tag = document.createElement('span');
+        tag.className = 'word-tag';
+        tag.innerText = word;
+        cloud.appendChild(tag);
+        input.value = '';
+        
+        const mockWords = ['时间衰减', '实时更新', '引入新行为', '混合推荐', '上下文感知', '概念漂移'];
+        if (cloud.children.length < 3) {
+            mockWords.forEach(w => {
+                if (Math.random() > 0.5 && !Array.from(cloud.children).some(c => c.innerText === w)) {
+                    const t = document.createElement('span');
+                    t.className = 'word-tag';
+                    t.style.background = '#6c757d';
+                    t.innerText = w;
+                    cloud.appendChild(t);
+                }
+            });
+        }
+    }
+
+    // 模块3：投票反馈
+    document.querySelectorAll('input[name="q3"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const fb = document.getElementById('fb-q3');
+            fb.className = 'feedback success';
+            if (this.value === 'A') fb.innerText = '选A的同学认为兴趣有稳定性。';
+            else if (this.value === 'B') fb.innerText = '选B的同学指出了“概念漂移”现象。';
+            else fb.innerText = '选C的同学最严谨！确实取决于变化幅度与时间衰减因子。';
+            fb.style.display = 'block';
+        });
+    });
+
+    // ================= 模块4：AI 小助手逻辑 =================
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+
+    function handleChatEnter(e) {
+        if (e.key === 'Enter') sendMessage();
+    }
+
+    function quickAsk(text) {
+        chatInput.value = text;
+        sendMessage();
+    }
+
+    function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // 1. 显示用户消息
+        appendMessage('user', text);
+        chatInput.value = '';
+
+        // 2. 模拟 AI 思考延迟
+        setTimeout(() => {
+            const reply = getAIReply(text);
+            appendMessage('bot', reply);
+        }, 600);
+    }
+
+    function appendMessage(sender, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}`;
+        msgDiv.innerText = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // 滚动到底部
+    }
+
+    // 简单的规则匹配知识库
+    function getAIReply(input) {
+        const text = input.toLowerCase();
+        
+        if (text.includes('余弦') || text.includes('相似度') || text.includes('cos')) {
+            return '余弦相似度是通过计算两个用户评分向量夹角的余弦值来衡量相似度。夹角越小（cos值越接近1），说明兴趣越相似。公式是 (A·B) / (|A|×|B|)。';
+        }
+        if (text.includes('冷启动') || text.includes('新用户')) {
+            return '冷启动是指新用户没有历史行为数据。解决方法主要有三种：1. 问一问（主动让用户选择兴趣标签）；2. 试一试（推送热门内容收集反馈）；3. 借一借（跨域迁移，利用用户在其它平台的数据）。';
+        }
+        if (text.includes('兴趣') && (text.includes('变化') || text.includes('漂移'))) {
+            return '用户兴趣会随时间变化（概念漂移）。协同过滤需要引入时间衰减因子，降低旧行为对当前推荐的影响，或者设计实时更新机制，结合用户最近的交互行为重新计算相似度。';
+        }
+        if (text.includes('加权') || text.includes('预测') || text.includes('公式')) {
+            return '加权预测公式是：r = Σ(S × R) / ΣS。也就是用相似用户的评分乘以相似度求和，再除以相似度之和。相似度越高，其评分对预测结果的影响越大。';
+        }
+        if (text.includes('你是谁') || text.includes('介绍')) {
+            return '我是基于协同过滤推荐算法的AI小助手，专门为这节课设计的。我可以帮你解答概念困惑、梳理计算步骤。';
+        }
+        if (text.includes('协同过滤') || text.includes('原理')) {
+            return '协同过滤的核心思想是“物以类聚，人以群分”。基于用户的协同过滤，就是找到和你兴趣相似的人，把他们喜欢但你没看过的物品推荐给你。';
+        }
+        return '这个问题很有深度！不过目前的我还只能回答与协同过滤核心概念相关的问题（如：余弦相似度、冷启动、兴趣漂移、加权预测）。你可以试着换个方式问问我哦！';
+    }
+</script>
+
+</body>
+</html>
