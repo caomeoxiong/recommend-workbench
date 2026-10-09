@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基于协同过滤的推荐智慧工作台</title>
+    <!-- 引入 MathJax 渲染数学公式 -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
             --primary-color: #2b5c8f;
@@ -20,7 +22,6 @@
         header h1 { font-size: 1.3rem; margin-bottom: 5px; }
         header p { font-size: 0.85rem; opacity: 0.9; }
         
-        /* Tabs 滚动适应 */
         .tabs-wrapper { overflow-x: auto; white-space: nowrap; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .tabs-wrapper::-webkit-scrollbar { display: none; }
         .tabs { display: flex; min-width: 100%; }
@@ -48,6 +49,7 @@
         .question p { font-weight: bold; margin-bottom: 10px; font-size: 0.95rem; }
         .options label { display: block; padding: 12px 15px; background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
         .options label:hover { background: #f0f7ff; border-color: #b3d4fc; }
+        .options label.selected { background: #e7f5ff; border-color: var(--secondary-color); }
         .options input[type="radio"], .options input[type="checkbox"] { margin-right: 10px; }
         
         .btn { display: block; width: 100%; padding: 12px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
@@ -71,7 +73,7 @@
         .word-tag { background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; animation: popIn 0.3s ease; }
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
         
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; margin-bottom: 10px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; margin-bottom: 10px; }
 
         /* AI 聊天界面样式 */
         .chat-container { display: flex; flex-direction: column; height: 400px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
@@ -185,40 +187,30 @@
             </table>
             
             <div class="question">
-                <p>Step 1: 寻找相似用户。根据用户D在a,b,d上的评分，选出最相似的2位用户：</p>
+                <p>Step 1: 寻找相似用户。根据用户D在a,b,d上的评分，从A,B,C中选出最相似的2位用户：</p>
                 <div class="options">
-                    <label><input type="checkbox" name="sim" value="A"> 用户A</label>
-                    <label><input type="checkbox" name="sim" value="B"> 用户B</label>
-                    <label><input type="checkbox" name="sim" value="C"> 用户C</label>
+                    <label onclick="toggleUser('A', this)"><input type="checkbox" name="sim" value="A"> 用户A</label>
+                    <label onclick="toggleUser('B', this)"><input type="checkbox" name="sim" value="B"> 用户B</label>
+                    <label onclick="toggleUser('C', this)"><input type="checkbox" name="sim" value="C"> 用户C</label>
                 </div>
                 <button class="btn btn-outline" onclick="checkSimilarity()">验证相似度</button>
-                <div class="calc-step" id="calc-sim">
-                    <b>计算过程：</b><br>
-                    D与A的余弦相似度 ≈ 0.936<br>
-                    D与B的余弦相似度 ≈ 0.994<br>
-                    D与C的余弦相似度 ≈ 0.911<br>
-                    <b>结论：</b>用户A和用户B最相似。
-                </div>
+                <div class="calc-step" id="calc-sim"></div>
             </div>
 
             <div class="question" id="step2" style="display:none;">
-                <p>Step 2: 预测评分。使用A和B的加权平均，预测D对物品c和e的评分：</p>
+                <p>Step 2: 预测评分。使用选出的2位相似用户的加权平均，预测D对物品c和e的评分：</p>
                 <div style="display:flex; gap:10px;">
                     <div style="flex:1;">
                         <label>预测c的评分：</label>
-                        <input type="number" id="pred-c" placeholder="如 3.47" step="0.01">
+                        <input type="number" id="pred-c" placeholder="输入预测值" step="0.01">
                     </div>
                     <div style="flex:1;">
                         <label>预测e的评分：</label>
-                        <input type="number" id="pred-e" placeholder="如 3.26" step="0.01">
+                        <input type="number" id="pred-e" placeholder="输入预测值" step="0.01">
                     </div>
                 </div>
                 <button class="btn" onclick="checkPrediction()">提交预测</button>
-                <div class="calc-step" id="calc-pred">
-                    <b>计算公式：</b> r = (S_A * R_A + S_B * R_B) / (S_A + S_B)<br>
-                    预测c = (0.936 * 4.5 + 0.994 * 2.5) / (0.936 + 0.994) ≈ <b>3.47</b><br>
-                    预测e = (0.936 * 3 + 0.994 * 3.5) / (0.936 + 0.994) ≈ <b>3.26</b>
-                </div>
+                <div class="calc-step" id="calc-pred"></div>
             </div>
         </div>
     </div>
@@ -299,38 +291,119 @@
         else { fb2.className = 'feedback error'; fb2.innerText = '错误，请再想想。'; fb2.style.display = 'block'; }
     }
 
-    // 模块2：相似度验证
-    function checkSimilarity() {
-        const checked = document.querySelectorAll('input[name="sim"]:checked');
-        const values = Array.from(checked).map(c => c.value);
-        const calcStep = document.getElementById('calc-sim');
-        
-        if (values.includes('A') && values.includes('B') && values.length === 2) {
-            calcStep.classList.add('show');
-            document.getElementById('step2').style.display = 'block';
+    // ================= 模块2：实战演练逻辑（完全重写） =================
+    
+    // 数据定义 (对应物品 a, b, d)
+    const userVectors = {
+        'D': [4.5, 3, 4],
+        'A': [3.5, 4, 2],
+        'B': [4, 3, 4.5],
+        'C': [2, 4, 3]
+    };
+    
+    // 物品 c 和 e 的评分
+    const ratings = {
+        'A': { c: 4.5, e: 3 },
+        'B': { c: 2.5, e: 3.5 },
+        'C': { c: 3.5, e: 4.5 }
+    };
+
+    let selectedUsers = [];
+
+    // 限制最多选2个
+    function toggleUser(user, labelElement) {
+        const checkbox = labelElement.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+            if (selectedUsers.length >= 2) {
+                checkbox.checked = false;
+                alert("最多只能选择2位相似用户哦！");
+                return;
+            }
+            selectedUsers.push(user);
+            labelElement.classList.add('selected');
         } else {
-            alert('选择有误！请确保选择2位用户。提示：余弦相似度计算需考虑向量夹角。');
-            calcStep.classList.remove('show');
-            document.getElementById('step2').style.display = 'none';
+            selectedUsers = selectedUsers.filter(u => u !== user);
+            labelElement.classList.remove('selected');
         }
     }
 
-    // 模块2：预测结果校验
+    // 计算余弦相似度
+    function cosineSimilarity(vec1, vec2) {
+        let dotProduct = 0;
+        let norm1 = 0;
+        let norm2 = 0;
+        for (let i = 0; i < vec1.length; i++) {
+            dotProduct += vec1[i] * vec2[i];
+            norm1 += vec1[i] * vec1[i];
+            norm2 += vec2[i] * vec2[i];
+        }
+        return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+    }
+
+    // 验证相似度
+    function checkSimilarity() {
+        if (selectedUsers.length !== 2) {
+            alert("请恰好选择2位用户！");
+            return;
+        }
+        
+        const calcStep = document.getElementById('calc-sim');
+        let resultHTML = '<b>计算过程：</b><br>';
+        let sims = {};
+        
+        selectedUsers.forEach(user => {
+            const sim = cosineSimilarity(userVectors['D'], userVectors[user]);
+            sims[user] = sim;
+            resultHTML += `D 与 ${user} 的余弦相似度 ≈ ${sim.toFixed(3)}<br>`;
+        });
+        
+        resultHTML += `<b>结论：</b>你选择了用户 ${selectedUsers.join(' 和 ')}。`;
+        
+        calcStep.innerHTML = resultHTML;
+        calcStep.classList.add('show');
+        document.getElementById('step2').style.display = 'block';
+        
+        // 保存相似度供下一步使用
+        window.currentSims = sims;
+    }
+
+    // 提交预测
     function checkPrediction() {
         const c = parseFloat(document.getElementById('pred-c').value);
         const e = parseFloat(document.getElementById('pred-e').value);
         const calcStep = document.getElementById('calc-pred');
         
-        const cOK = Math.abs(c - 3.47) < 0.05;
-        const eOK = Math.abs(e - 3.26) < 0.05;
+        if (isNaN(c) || isNaN(e)) {
+            alert("请输入预测的评分！");
+            return;
+        }
+
+        const u1 = selectedUsers[0];
+        const u2 = selectedUsers[1];
+        const s1 = window.currentSims[u1];
+        const s2 = window.currentSims[u2];
+
+        // 动态计算正确答案
+        const correctC = (s1 * ratings[u1].c + s2 * ratings[u2].c) / (s1 + s2);
+        const correctE = (s1 * ratings[u1].e + s2 * ratings[u2].e) / (s1 + s2);
+
+        const cOK = Math.abs(c - correctC) < 0.05;
+        const eOK = Math.abs(e - correctE) < 0.05;
         
+        let resultHTML = `<b>基于你选择的 ${u1} 和 ${u2}，正确计算如下：</b><br>`;
+        resultHTML += `预测 c = (${s1.toFixed(3)} * ${ratings[u1].c} + ${s2.toFixed(3)} * ${ratings[u2].c}) / (${s1.toFixed(3)} + ${s2.toFixed(3)}) ≈ <b>${correctC.toFixed(2)}</b><br>`;
+        resultHTML += `预测 e = (${s1.toFixed(3)} * ${ratings[u1].e} + ${s2.toFixed(3)} * ${ratings[u2].e}) / (${s1.toFixed(3)} + ${s2.toFixed(3)}) ≈ <b>${correctE.toFixed(2)}</b><br>`;
+
         if (cOK && eOK) {
             alert('预测正确！完美掌握加权预测公式！');
-            calcStep.classList.add('show');
+            resultHTML = '✅ 你的预测是正确的！<br>' + resultHTML;
         } else {
-            alert('预测有偏差。请检查：是否使用了相似用户A和B的评分？加权公式的分母是相似度之和。');
-            calcStep.classList.add('show');
+            alert('预测有偏差，请查看下方正确计算过程进行对比。');
+            resultHTML = '❌ 预测有偏差。<br>' + resultHTML;
         }
+        
+        calcStep.innerHTML = resultHTML;
+        calcStep.classList.add('show');
     }
 
     // 模块3：词云互动
@@ -388,12 +461,8 @@
     function sendMessage() {
         const text = chatInput.value.trim();
         if (!text) return;
-
-        // 1. 显示用户消息
         appendMessage('user', text);
         chatInput.value = '';
-
-        // 2. 模拟 AI 思考延迟
         setTimeout(() => {
             const reply = getAIReply(text);
             appendMessage('bot', reply);
@@ -405,13 +474,11 @@
         msgDiv.className = `message ${sender}`;
         msgDiv.innerText = text;
         chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight; // 滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // 简单的规则匹配知识库
     function getAIReply(input) {
         const text = input.toLowerCase();
-        
         if (text.includes('余弦') || text.includes('相似度') || text.includes('cos')) {
             return '余弦相似度是通过计算两个用户评分向量夹角的余弦值来衡量相似度。夹角越小（cos值越接近1），说明兴趣越相似。公式是 (A·B) / (|A|×|B|)。';
         }
