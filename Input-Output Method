@@ -1,0 +1,144 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>投入产出与低碳决策工作台</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:#203951;font:18px/1.65 system-ui,'Microsoft YaHei',sans-serif}header{background:linear-gradient(110deg,#255988,#238af1);color:white;text-align:center;padding:27px 20px}h1{font-size:30px;margin:0}header p{margin:6px 0 0;opacity:.85}nav{display:flex;background:white;border-bottom:1px solid #dce6ef;position:sticky;top:0;z-index:2}nav button{flex:1;border:0;border-bottom:3px solid transparent;border-radius:0;padding:18px 8px;background:white;color:#52708a}nav button.active{color:#1262af;border-color:#238af1;background:#f5faff;font-weight:bold}button{font:inherit;cursor:pointer;border:1px solid #c7d9eb;background:#eff7ff;color:#145b9d;border-radius:8px;padding:9px 16px}button:hover{background:#e0efff}button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #2784d7;outline-offset:3px}main{max-width:1180px;margin:28px auto;padding:0 24px}.panel{display:none}.panel.active{display:block}.card{background:white;border:1px solid #e3eaf0;border-radius:14px;padding:27px;margin-bottom:20px;box-shadow:0 6px 24px #17395208}h2{font-size:24px;color:#195e9e;margin:0 0 12px}h3{font-size:21px;margin:0 0 9px}.muted{color:#63798d;font-size:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}details{background:#f7f9fc;border:1px solid #e0e7ef;border-radius:8px;margin:12px 0;padding:14px 18px}summary{font-weight:650;color:#1c609f;cursor:pointer}details p{margin:12px 0 3px}.formula{padding:16px;background:#eaf4ff;color:#15598f;font-size:23px;text-align:center;border-radius:8px}.lead{border-left:4px solid #2588e5;padding-left:16px}.row{display:flex;justify-content:space-between;gap:14px;align-items:center}.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}label{display:block;margin:13px 0}input[type=range]{width:100%;accent-color:#2587df}textarea{width:100%;min-height:150px;resize:vertical;font:inherit;padding:15px;border:1px solid #c9d9e8;border-radius:8px}a{color:#1767b2}.metric{background:#edf6fe;border-radius:10px;padding:17px}.metric strong{display:block;font-size:31px;color:#1763a1}.metric small{font-size:15px}.bars{margin:16px 0}.bar{height:13px;background:#e4edf5;border-radius:6px;margin-bottom:12px;overflow:hidden}.bar i{display:block;height:100%;background:#2687d8;transition:width .2s}.answer{margin-top:14px;padding:14px;border-left:4px solid #29a889;background:#edf9f5}.note{background:#fff5e6;color:#785b2c;padding:13px;border-radius:8px;font-size:16px}table{width:100%;border-collapse:collapse;font-size:16px}td,th{padding:9px;border-bottom:1px solid #e2eaf2;text-align:left}.quiz button{display:block;width:100%;text-align:left;margin:8px 0}.quiz button.selected{background:#dcefff;border-color:#2588e5}.status{color:#27745f;font-size:16px}footer{max-width:1180px;margin:20px auto;padding:0 24px 24px;color:#6c8192;font-size:15px}@media(max-width:800px){.grid{grid-template-columns:1fr}h1{font-size:25px}nav button{font-size:15px;padding:13px 4px}main{padding:0 12px}.card{padding:20px}}
+.graph-scroll{overflow:auto}#knowledgeGraph{min-width:800px;width:100%;height:auto}.graph-node{cursor:pointer;outline:none}.graph-node rect{fill:#edf6ff;stroke:#93b9da;stroke-width:2}.graph-node text{font-size:17px;fill:#15548b;font-weight:650}.graph-node.selected-node rect,.graph-node:focus rect{fill:#d9edff;stroke:#1879c9;stroke-width:3}.edge-label{font-size:14px;fill:#557590;paint-order:stroke;stroke:white;stroke-width:6;stroke-linejoin:round}.selected-edge path{stroke:#157cc9!important;stroke-width:3!important}#graphDetail p{margin:8px 0}
+/* 时间轴与AI聊天样式 */
+.timeline { border-left: 3px solid #2588e5; padding-left: 20px; margin: 15px 0; }
+.timeline-item { position: relative; margin-bottom: 20px; }
+.timeline-item::before { content: ''; position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #2588e5; border: 2px solid white; }
+.timeline-year { font-weight: bold; color: #1763a1; font-size: 1.05em; }
+.chat-container { display: flex; flex-direction: column; height: 400px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; margin-top: 15px; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 15px; }
+.message { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
+.message.bot { align-self: flex-start; background: #e7f5ff; color: #333; border-bottom-left-radius: 2px; }
+.message.user { align-self: flex-end; background: #2588e5; color: white; border-bottom-right-radius: 2px; }
+.chat-input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #eee; }
+.chat-input-area input { flex: 1; margin-bottom: 0; border-radius: 20px 0 0 20px; border-right: none; padding: 12px; border: 1px solid #c9d9e8; }
+.chat-input-area button { padding: 0 20px; background: #2588e5; color: white; border: none; border-radius: 0 20px 20px 0; font-weight: bold; cursor: pointer; }
+.quick-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.quick-q { background: #f0f7ff; color: #1763a1; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem; cursor: pointer; border: 1px solid #b3d4fc; transition: all 0.2s; }
+.quick-q:hover { background: #2588e5; color: white; }
+</style><header><h1>投入产出与低碳决策工作台</h1><p>管理决策方法 · 从产业链传导到双循环低碳路径</p></header><nav aria-label="学习栏目"><button class="active" data-tab="knowledge">知识全景</button><button data-tab="review">温故知新</button><button data-tab="practice">实战演练</button><button data-tab="debate">思维碰撞</button><button data-tab="helper">知识图谱</button><button data-tab="ai">AI伴学小助手</button></nav><main>
+<section id="knowledge" class="panel active"><div class="card"><h2>投入产出分析全过程梳理</h2><p class="muted">回顾课堂方法，再把经济结果与碳排放联系起来。</p><details open><summary>1. 读懂投入产出表：部门之间怎样联系？</summary><p>行表示某部门产品的去向，列表示某部门生产所需的投入。中间使用描述部门联系，最终需求包括消费、投资、出口等。</p></details><details><summary>2. 直接消耗系数：生产一单位需要多少投入？</summary><p>aᵢⱼ = zᵢⱼ / xⱼ。分母是第 j 部门总产出。系数表示第 j 部门每单位产出直接消耗第 i 部门产品的数量。</p></details><details><summary>3. 需求与产出：为什么会产生多轮影响？</summary><div class="formula">X = AX + Y　　ΔX = (I − A)⁻¹ ΔY</div><p>最终需求变化先影响直接供给部门，再改变其采购，影响沿产业链累积。计算假定投入系数固定且生产能力可以满足需求。</p></details><details><summary>4. 政策比较：相同总量是否意味着相同结构？</summary><p>政府采购可以定向支持电子行业，扩大内需的需求投向更分散。总产出恢复相同，各部门的恢复程度仍可能不同。不同基数的增长率不能直接当作政策成本比较。</p><a href="https://io-classroom-lab.fuzzysong2.chatgpt.site/" target="_blank" rel="noopener">打开课堂产业链传导实验室 ↗</a></details><details><summary>5. 低碳拓展：把产业链排放计入决策</summary><div class="formula">ΔC = cᵀΔX = cᵀ(I − A)⁻¹ΔY</div><p>c 表示各部门每单位产出的直接排放强度。将各部门产出变化与其直接排放强度相乘并求和，得到该需求变化带来的产业链排放变化。</p></details></div></section>
+<section id="review" class="panel"><div class="card"><h2>温故知新</h2><p>先作答，再查看解释。练习结果只保存在当前浏览器。</p><div id="quiz"></div><button id="grade">检查答案</button><div id="quizFeedback" aria-live="polite"></div></div></section>
+<section id="practice" class="panel"><div class="card"><h2>双循环低碳路径演练</h2><div class="chips"><button id="internal">对内：消费升级</button><button id="external">对外：出口结构</button></div><h3>① 作业背景：中美贸易摩擦与双循环</h3>
+<details><summary>1. 中美贸易摩擦演进时间轴（点击展开）</summary>
+<div class="timeline">
+<div class="timeline-item"><div class="timeline-year">2018年</div><div>美国发起301调查并加征关税，中美贸易摩擦全面爆发，涉及电子、机械等多个行业。</div></div>
+<div class="timeline-item"><div class="timeline-year">2019-2020年</div><div>关税清单扩大，涉及科技、制造等多领域，双方签署第一阶段经贸协议，但科技领域摩擦持续升温。</div></div>
+<div class="timeline-item"><div class="timeline-year">2021-2022年</div><div>美国通过《芯片与科学法案》、《通胀削减法案》，推动“脱钩断链”、“友岸外包”，加速全球产业链向区域化、本地化重构。</div></div>
+<div class="timeline-item"><div class="timeline-year">2023年至今</div><div>产业链重构深化，中国提出“双循环”新发展格局，强调扩大内需与高水平对外开放并重，注重产业链安全与绿色低碳转型。</div></div>
+<div class="timeline-item"><div class="timeline-year">未来趋势</div><div>全球供应链区域化、绿色化、数字化趋势加强，贸易摩擦将从关税向技术标准、碳关税等非关税壁垒延伸。</div></div>
+</div>
+<p><b>为什么加速产业链重构？</b>关税增加导致成本上升，企业为规避风险分散供应链，推动“中国+1”策略，产业链从全球化转向区域化、本地化。</p>
+</details>
+<details><summary>2. 什么是低碳行业？</summary>
+<p>低碳行业指在生产过程中能源消耗低、碳排放强度小的行业。本教学模型简化为三部门：</p>
+<ul>
+<li><b>电子产品：</b>排放强度 0.30（相对低碳，但需注意上游材料消耗）</li>
+<li><b>原材料：</b>排放强度 1.20（高碳，冶炼加工能耗高）</li>
+<li><b>服务业：</b>排放强度 0.10（低碳，主要为间接排放）</li>
+</ul>
+<p>现实中低碳行业还包括新能源、节能环保、高端装备制造等。消费升级应优先拉动低碳密集型行业，实现经济与减排双赢。</p>
+</details>
+<h3>② 作业背景</h3><p>课堂中，我们以电子产品对美出口中断为情景，运用投入产出模型观察了出口订单减少如何沿部门采购关系传导，并比较政府采购与扩大内需两种恢复路径。这说明，最终需求的规模和投向都会影响各部门的产出。</p><p>现在把问题进一步拓展：在贸易摩擦与产业链调整的背景下，国内消费与国际市场需求如何共同支撑经济活动？如果新增需求投向能源与材料消耗较高的部门，上游生产也可能带来更多碳排放。因此，评价方案既要看经济带动，也要把产业链排放计入分析。</p><p>本次作业以“内外双循环的低碳路径”为主题。在相同需求规模下尝试调整部门结构，探索能否在保持产出带动的同时减少生产排放。</p>
+<h3>③ 作业任务与数据资源</h3>
+<details><summary>点击查看投入产出表与碳排放数据资源</summary>
+<p><b>基准产出：</b>[300,290,110]亿元。中间投入矩阵为[[80,30,30],[120,80,10],[15,10,5]]亿元。</p>
+<table><tr><th>部门</th><th>总产出（亿元）</th><th>直接排放强度（万吨CO₂/亿元）</th><th>直接碳排放（万吨）</th></tr>
+<tr><td>电子产品</td><td>300</td><td>0.30</td><td>90</td></tr>
+<tr><td>原材料</td><td>290</td><td>1.20</td><td>348</td></tr>
+<tr><td>服务业</td><td>110</td><td>0.10</td><td>11</td></tr>
+</table>
+<p class="muted">注：以上为教学简化模型，非实际统计数据。真实研究需采用国家统计局投入产出表和CEADs等数据库碳排放数据。</p>
+</details>
+<p><b>对内：</b>消费升级应优先拉动哪些低碳密集型行业？在本演练中，比较三部门需求投向的经济与排放结果。<br><b>对外：</b>如何优化出口结构，实现经济收益与碳减排“双赢”？在本演练中，保持出口需求总额不变，比较结构调整前后的国内产出与生产排放。</p><p id="taskText">消费升级应优先拉动哪些部门，才能兼顾产出带动与低碳目标？</p><h3>④ 作答要求</h3><p>选择对内或对外任务，以10亿元需求为统一规模。先保存一个比较基准，再设计至少一个调整方案。记录两种方案的需求分配、总产出增加、产业链排放与单位产出排放，完成结果判断，并依据计算结果写出政策建议。</p><p class="muted">建议按“需求投向—计算结果—方案比较—政策建议—模型局限”组织分析。具体行业的优先次序需结合更细行业数据验证，不能仅凭三部门演示直接作出现实结论。</p><div class="note">三部门教学模型。排放强度为演示假设，非行业实测数据；总产出不等于GDP或利润。</div><h3 style="margin-top:18px">⑤ 作答</h3><p class="muted">先在下方调整参数，再完成结果判断与分析记录。</p></div><div class="grid"><div class="card"><h3 id="allocationTitle">分配新增消费需求 · 合计10亿元</h3><p class="muted" id="allocationHint">先分配电子产品，再将剩余需求分配给原材料，余额自动投向服务业。</p><label>电子产品 <b id="eValue"></b><input id="electronic" type="range" min="0" max="10" step=".1" value="3"></label><label>原材料 <b id="rValue"></b><input id="raw" type="range" min="0" max="7" step=".1" value="3"></label><p>服务业：<b id="sValue"></b></p><div class="chips"><button data-preset="electronics">电子产品优先</button><button data-preset="raw">原材料优先</button><button data-preset="services">服务业优先</button><button id="saveBase">设为比较基准</button></div><p class="status" id="baseStatus" aria-live="polite"></p></div><div class="card"><h3>观察结果</h3><div class="grid"><div class="metric"><small>总产出增加 · 亿元</small><strong id="gain"></strong></div><div class="metric"><small>产业链排放增加 · 万吨CO₂</small><strong id="carbon"></strong></div></div><div class="metric" style="margin-top:12px"><small>每亿元新增产出的排放 · 万吨CO₂/亿元</small><strong id="intensity"></strong></div><div id="sectorBars" class="bars"></div><div id="comparison" class="answer" aria-live="polite"></div><p class="muted">“双赢”在这里指：相对于已保存的同规模需求基准，产出不下降且排放下降。排放减少是相对方案差额，不代表新增需求产生负排放。</p></div></div><div class="card"><h3>结果判断</h3><div class="chips"><button data-verdict="win">产出不降、排放下降</button><button data-verdict="trade">尚未满足双赢条件</button><button data-verdict="same">与基准相同</button></div><p id="verdictFeedback" aria-live="polite"></p><h3>分析记录</h3><textarea id="report" placeholder="我的需求投向是……；与基准相比，产出……、排放……；据此建议……；模型的局限是……"></textarea><div class="chips"><button id="exportReport">下载分析记录</button></div><span class="status" id="saveStatus"></span></div></section>
+<section id="debate" class="panel"><div class="card"><h2>思维碰撞：选出更合理的判断</h2><p class="muted">每题选择一个答案，提交后查看解释。</p><div id="debateQuiz"></div><button id="debateGrade">提交判断</button><div id="debateSummary" aria-live="polite"></div></div></section><section id="helper" class="panel"><div class="card"><h2>知识图谱：从部门联系到低碳决策</h2><p class="muted">点击节点查看概念与相邻关系。连线上的文字说明知识之间如何联系。</p><div class="graph-scroll"><svg id="knowledgeGraph" viewBox="0 0 1040 540" role="img" aria-label="投入产出与低碳决策知识关系图"><defs><marker id="graphArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10" fill="#5890bb"/></marker></defs><g id="graphEdges"></g><g id="graphNodes"></g></svg></div><div class="answer" id="graphDetail" aria-live="polite"></div></div><div class="card"><h3>如何用图谱完成作业？</h3><p>先用投入产出表建立部门联系，再把你的消费或出口方案写成需求向量。求出产出变化后，结合直接排放强度核算产业链排放，最后相对基准比较经济与环境结果。</p><button data-go="practice">返回作业演练</button></div></section>
+<!-- AI小助手模块 -->
+<section id="ai" class="panel"><div class="card"><h2>🤖 投入产出 AI 伴学小助手</h2><p class="muted">你可以问我关于投入产出模型、中美贸易摩擦、碳排放核算、双循环政策等任何问题。</p><div class="chat-container"><div class="chat-messages" id="chat-messages"><div class="message bot">你好！我是投入产出与低碳决策的AI伴学小助手。你可以问我关于直接消耗系数、产业链传导、碳排放强度、中美贸易摩擦对产业链的影响，或者双循环政策等问题。请问有什么可以帮你的？</div></div><div class="chat-input-area"><input type="text" id="chat-input" placeholder="输入你的问题..." onkeypress="handleChatEnter(event)"><button onclick="sendMessage()">发送</button></div></div><div style="padding:10px 15px 15px; background:#fcfdff;"><p style="font-size:0.9rem; color:#888; margin-bottom:5px;">试试这样问：</p><div class="quick-questions"><span class="quick-q" onclick="quickAsk('什么是直接消耗系数？')">什么是直接消耗系数？</span><span class="quick-q" onclick="quickAsk('中美贸易摩擦如何影响产业链？')">贸易摩擦如何影响产业链？</span><span class="quick-q" onclick="quickAsk('如何计算产业链碳排放？')">如何计算产业链碳排放？</span><span class="quick-q" onclick="quickAsk('什么是双循环战略？')">什么是双循环战略？</span><span class="quick-q" onclick="quickAsk('哪些是低碳行业？')">哪些是低碳行业？</span></div></div></div></section>
+</main><footer>学习记录保存在本浏览器，不会自动提交给教师。真实行业建议需要更细的投入产出表与排放数据。</footer><script>
+const $=id=>document.getElementById(id);function tab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>tab(b.dataset.go));
+const questions=[['直接消耗系数 aᵢⱼ 的分母是什么？',['第i部门总产出','第j部门总产出','最终需求总额'],1,'aᵢⱼ=zᵢⱼ/xⱼ，按投入产出表的列除以该生产部门总产出。'],['电子行业出口订单减少，为什么原材料也减产？',['电子行业减少中间投入采购','所有部门出口份额相同','原材料价格一定下跌'],0,'需求变化通过部门采购联系向上游传递，产生间接影响。'],['判断需求方案的产业链排放，应使用什么？',['只看最终产品部门的直接排放','各部门产出变化与直接排放强度相乘求和','只看政策需求金额'],1,'ΔC=cᵀΔX，ΔX包含直接与间接产出影响。']];const answers={};$('quiz').innerHTML=questions.map((q,i)=>`<div class="quiz"><h3>${i+1}. ${q[0]}</h3>${q[1].map((v,j)=>`<button data-q="${i}" data-a="${j}">${v}</button>`).join('')}<div id="feedback${i}"></div></div>`).join('');document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{answers[b.dataset.q]=Number(b.dataset.a);document.querySelectorAll(`[data-q="${b.dataset.q}"]`).forEach(x=>x.classList.toggle('selected',x===b))});$('grade').onclick=()=>{let n=0;questions.forEach((q,i)=>{const ok=answers[i]===q[2];n+=ok;$('feedback'+i).textContent=(answers[i]===undefined?'尚未作答。':ok?'回答正确。':'请再想一想。')+q[3]});$('quizFeedback').textContent=`答对 ${n} / ${questions.length} 题。`};
+const A=[[80/300,30/290,30/110],[120/300,80/290,10/110],[15/300,10/290,5/110]],c=[.3,1.2,.1],names=['电子产品','原材料','服务业'];const sum=a=>a.reduce((x,y)=>x+y,0),f=x=>x.toFixed(2);function solve(d){let m=A.map((r,i)=>r.map((v,j)=>(i===j?1:0)-v).concat(d[i]));for(let k=0;k<3;k++){const t=m[k][k];for(let j=k;j<4;j++)m[k][j]/=t;for(let i=0;i<3;i++)if(i!==k){const t=m[i][k];for(let j=k;j<4;j++)m[i][j]-=t*m[k][j]}}return m.map(r=>r[3])}function evaluate(d){const x=solve(d);return {d,x,gain:sum(x),carbon:sum(x.map((v,i)=>v*c[i]))}}let mode='internal',bases={internal:evaluate([3,3,4]),external:evaluate([3,3,4])},current;function render(){const e=Number($('electronic').value);$('raw').max=10-e;if(Number($('raw').value)>10-e)$('raw').value=10-e;const r=Number($('raw').value),sv=10-e-r;current=evaluate([e,r,sv]);$('eValue').textContent=f(e)+'亿元';$('rValue').textContent=f(r)+'亿元';$('sValue').textContent=f(sv)+'亿元';$('gain').textContent=f(current.gain);$('carbon').textContent=f(current.carbon);$('intensity').textContent=f(current.carbon/current.gain);$('sectorBars').innerHTML=current.x.map((v,i)=>`<div class="row"><span>${names[i]}产出增加</span><b>${f(v)}亿元</b></div><div class="bar"><i style="width:${Math.min(100,v/30*100)}%"></i></div>`).join('');const b=bases[mode],dg=current.gain-b.gain,dc=current.carbon-b.carbon;$('comparison').textContent=`相对基准：总产出 ${dg>=0?'+':''}${f(dg)}亿元，排放 ${dc>=0?'+':''}${f(dc)}万吨CO₂。`+(dg>=-.00001&&dc<-.00001?'本次调整实现模型中的相对“双赢”。':Math.abs(dg)<.00001&&Math.abs(dc)<.00001?'当前方案与基准相同。':'本次调整尚未同时满足产出不降、排放下降。');$('baseStatus').textContent='当前基准需求：'+b.d.map((v,i)=>names[i]+f(v)+'亿元').join('，');}['electronic','raw'].forEach(id=>$(id).oninput=render);function setMode(v){mode=v;const inside=v==='internal';$('taskText').textContent=inside?'消费升级应优先拉动哪些部门，才能兼顾产出带动与低碳目标？':'怎样调整出口结构，才能在相同需求规模下实现产出不降、生产排放下降？';$('allocationTitle').textContent=inside?'分配新增消费需求 · 合计10亿元':'分配出口需求 · 合计10亿元';render()}$('internal').onclick=()=>setMode('internal');$('external').onclick=()=>setMode('external');document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{$('electronic').value=b.dataset.preset==='electronics'?10:0;$('raw').max=10-Number($('electronic').value);$('raw').value=b.dataset.preset==='raw'?10:0;render()});$('saveBase').onclick=()=>{bases[mode]=evaluate([...current.d]);render()};
+function restore(id){try{$(id).value=localStorage.getItem('io-'+id)||''}catch{}}['report'].forEach(id=>{restore(id);$(id).oninput=()=>{try{localStorage.setItem('io-'+id,$(id).value);if(id==='report')$('saveStatus').textContent='已保存到本浏览器'}catch{if(id==='report')$('saveStatus').textContent='浏览器不允许保存，请下载记录'}}});$('exportReport').onclick=()=>{const text=`投入产出与低碳决策分析记录\n任务：${mode==='internal'?'消费升级':'出口结构'}\n需求分配：${current.d.map((v,i)=>names[i]+f(v)+'亿元').join('，')}\n新增总产出：${f(current.gain)}亿元\n新增排放：${f(current.carbon)}万吨CO₂\n${$('comparison').textContent}\n教学假设数据，非实测行业结论。\n\n我的建议：\n${$('report').value}`;const u=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download='低碳决策分析记录.txt';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};const dq=[['同样增加10亿元需求，是否应只选择产出乘数最大的方案？',['是，产出越大政策就越好','不一定，还要比较排放和政策目标','只需比较需求增长百分比'],1,'产出乘数只反映总产出带动，决策还要结合排放、产业结构与目标。'],['某部门直接排放很低，可以判定其产品产业链排放也低吗？',['可以，直接排放就是全部排放','不可以，还要考虑上游投入的排放','只要该部门属于服务业就可以'],1,'上游中间投入可能产生较高排放，应计算完全产业链影响。'],['同额出口需求调整后，国内产出不降、国内生产排放下降，说明什么？',['已经证明全球碳排放下降','在本模型中实现相对双赢，但不能直接推断全球减排','企业利润一定提高'],1,'模型只核算国内生产排放与总产出，不包含跨国排放转移和利润。']];const da={};$('debateQuiz').innerHTML=dq.map((q,i)=>`<div class="quiz"><h3>${i+1}. ${q[0]}</h3>${q[1].map((v,j)=>`<button data-dq="${i}" data-da="${j}">${v}</button>`).join('')}<p id="df${i}"></p></div>`).join('');document.querySelectorAll('[data-dq]').forEach(b=>b.onclick=()=>{da[b.dataset.dq]=Number(b.dataset.da);document.querySelectorAll(`[data-dq="${b.dataset.dq}"]`).forEach(x=>x.classList.toggle('selected',x===b))});$('debateGrade').onclick=()=>{let n=0;dq.forEach((q,i)=>{const ok=da[i]===q[2];n+=ok;$('df'+i).textContent=(da[i]===undefined?'尚未选择。':ok?'判断正确。':'请重新思考。')+q[3]});$('debateSummary').textContent=`答对${n}/${dq.length}题。`};document.querySelectorAll('[data-verdict]').forEach(b=>b.onclick=()=>{const base=bases[mode],dg=current.gain-base.gain,dc=current.carbon-base.carbon;const expected=Math.abs(dg)<1e-6&&Math.abs(dc)<1e-6?'same':dg>=-1e-6&&dc< -1e-6?'win':'trade';$('verdictFeedback').textContent=b.dataset.verdict===expected?'判断与当前计算结果一致。请核对比较基准与数据假设。':'请再比较产出与排放的差额。双赢要求产出不降且排放下降。'});
+
+const gn=[['table','投入产出表',130,90,'记录各部门之间的中间投入和最终需求，是模型的数据起点。'],['coef','直接消耗系数 A',395,90,'aᵢⱼ=zᵢⱼ/xⱼ，描述每单位产出直接需要的部门投入。'],['model','投入产出模型',660,90,'X=AX+Y；投入系数固定时，ΔX=(I−A)⁻¹ΔY。'],['demand','最终需求变化 ΔY',925,250,'由消费、投资和出口等需求变化组成。政策方案首先改变需求规模或结构。'],['output','产业链产出变化 ΔX',660,250,'包含直接影响与多轮间接传导，是评价部门恢复和总产出带动的依据。'],['intensity','直接排放强度 c',395,420,'每单位部门产出对应的直接排放。本演练使用标注的教学假设数据。'],['carbon','产业链排放变化 ΔC',660,420,'ΔC=cᵀΔX。各部门直接排放与完全产出影响相结合，得到产业链排放变化。'],['policy','双循环政策方案',130,250,'对内调整消费投向，对外调整出口结构。以同规模需求为比较前提。'],['decision','经济与低碳比较',925,420,'比较产出与排放相对基准的变化。总产出不是GDP或利润，国内排放也不等于全球排放。']];
+const ge=[['table','coef','按列标准化'],['coef','model','建立投入关系'],['policy','demand','设定需求投向'],['demand','output','乘数传导'],['model','output','求解均衡'],['output','carbon','核算生产排放'],['intensity','carbon','提供强度'],['output','decision','评价经济带动'],['carbon','decision','评价环境影响']];
+const gm=Object.fromEntries(gn.map(n=>[n[0],n]));$('graphEdges').innerHTML=ge.map(([a,b,label])=>{const aa=gm[a],bb=gm[b],dx=bb[2]-aa[2],dy=bb[3]-aa[3],len=Math.hypot(dx,dy),off=Math.abs(dx)>Math.abs(dy)?104:29,x1=aa[2]+dx/len*off,y1=aa[3]+dy/len*off,x2=bb[2]-dx/len*off,y2=bb[3]-dy/len*off;const route=a==='policy'&&b==='demand'?'M130 222V175H925V222':`M${x1} ${y1}L${x2} ${y2}`;return `<g data-edge="${a} ${b}"><path d="${route}" stroke="#5890bb" stroke-width="2" fill="none" marker-end="url(#graphArrow)"/><text x="${(x1+x2)/2}" y="${a==='policy'&&b==='demand'?165:(y1+y2)/2-10}" text-anchor="middle" class="edge-label">${label}</text></g>`}).join('');$('graphNodes').innerHTML=gn.map(n=>`<g class="graph-node" role="button" tabindex="0" aria-label="${n[1]}" data-node="${n[0]}"><rect x="${n[2]-103}" y="${n[3]-28}" width="206" height="56" rx="12"/><text x="${n[2]}" y="${n[3]+6}" text-anchor="middle">${n[1]}</text></g>`).join('');function selectNode(id){const n=gm[id];document.querySelectorAll('[data-node]').forEach(x=>x.classList.toggle('selected-node',x.dataset.node===id));document.querySelectorAll('[data-edge]').forEach(x=>x.classList.toggle('selected-edge',x.dataset.edge.split(' ').includes(id)));const rel=ge.filter(([a,b])=>a===id||b===id).map(([a,b,l])=>gm[a][1]+' — '+l+' — '+gm[b][1]);$('graphDetail').replaceChildren();const h=document.createElement('h3');h.textContent=n[1];const p=document.createElement('p');p.textContent=n[4];const q=document.createElement('p');q.textContent='关联知识：'+rel.join('；');$('graphDetail').append(h,p,q)}document.querySelectorAll('[data-node]').forEach(x=>{x.onclick=()=>selectNode(x.dataset.node);x.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectNode(x.dataset.node)}}});selectNode('model');
+
+// ================= AI 伴学小助手逻辑 =================
+const chatMessages = $('chat-messages');
+const chatInput = $('chat-input');
+
+function handleChatEnter(e) {
+    if (e.key === 'Enter') sendMessage();
+}
+
+function quickAsk(text) {
+    chatInput.value = text;
+    sendMessage();
+}
+
+function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    appendMessage('user', text);
+    chatInput.value = '';
+    setTimeout(() => {
+        const reply = getAIReply(text);
+        appendMessage('bot', reply);
+    }, 600);
+}
+
+function appendMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+    msgDiv.innerText = text;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function getAIReply(input) {
+    const text = input.toLowerCase();
+    
+    // 投入产出模型
+    if (text.includes('直接消耗系数') || text.includes('aij') || text.includes('投入产出表')) {
+        return '直接消耗系数 aᵢⱼ = zᵢⱼ / xⱼ，表示第 j 部门每生产一单位总产出，直接消耗第 i 部门产品的数量。它是投入产出模型的核心参数，反映了部门之间的技术经济联系。';
+    }
+    if (text.includes('模型') || text.includes('公式') || text.includes('x=ax+y')) {
+        return '投入产出模型的核心公式是 X = AX + Y，其中 X 是总产出向量，A 是直接消耗系数矩阵，Y 是最终需求向量。当最终需求变化 ΔY 时，产出变化为 ΔX = (I − A)⁻¹ΔY。';
+    }
+    if (text.includes('产业链') || text.includes('传导') || text.includes('间接影响')) {
+        return '当某个部门的最终需求发生变化时，会首先影响该部门的生产，进而影响其上游供应商，供应商再影响他们的上游，这就是产业链传导。例如电子产品出口减少，原材料部门也会因为订单减少而减产。';
+    }
+    
+    // 碳排放与低碳
+    if (text.includes('碳排放') || text.includes('排放强度') || text.includes('低碳')) {
+        return '产业链排放变化 ΔC = cᵀΔX，其中 c 是各部门的直接排放强度向量。将各部门的产出变化乘以各自的排放强度并求和，就能得到整个产业链的排放变化。本模型中电子产品排放强度0.30、原材料1.20、服务业0.10，原材料属于高碳部门，服务业属于低碳部门。';
+    }
+    if (text.includes('低碳行业') || text.includes('哪些行业')) {
+        return '低碳行业指生产过程中能源消耗低、碳排放强度小的行业。本教学模型简化为：电子产品（0.30）、原材料（1.20）、服务业（0.10）。现实中还包括新能源、节能环保、高端装备制造等。消费升级应优先拉动低碳密集型行业。';
+    }
+    
+    // 贸易摩擦与双循环
+    if (text.includes('贸易摩擦') || text.includes('中美') || text.includes('301') || text.includes('关税')) {
+        return '中美贸易摩擦自2018年爆发以来持续演进。从加征关税到科技封锁，再到“脱钩断链”，加速了全球产业链重构。企业为规避风险分散供应链，推动“中国+1”策略，产业链从全球化转向区域化、本地化。这对中国的“双循环”战略提出了更高要求。';
+    }
+    if (text.includes('双循环') || text.includes('内外循环')) {
+        return '“双循环”是指以国内大循环为主体、国内国际双循环相互促进的新发展格局。对内通过消费升级拉动内需，对外优化出口结构。在本模型中，你可以通过调整需求投向，探索如何在保持产出带动的同时减少碳排放。';
+    }
+    
+    // 模型局限与政策建议
+    if (text.includes('局限') || text.includes('假设') || text.includes('数据来源')) {
+        return '本模型为三部门教学简化模型，排放强度为演示假设数据，非行业实测数据。总产出不等于GDP或利润，国内排放也不等于全球排放。现实决策需要更细的投入产出表和真实的碳排放数据库（如CEADs）。';
+    }
+    if (text.includes('双赢') || text.includes('政策建议')) {
+        return '在本模型中，“双赢”是指相对于已保存的同规模需求基准，产出不下降且排放下降。政策建议应优先将新增需求投向低碳密集型行业（如服务业），减少对高碳原材料部门的依赖。但需注意这只是模型中的相对优化，现实政策需结合更多约束条件。';
+    }
+
+    if (text.includes('你是谁') || text.includes('介绍')) {
+        return '我是投入产出与低碳决策的AI伴学小助手，专门为这节课设计。我可以帮你解答关于投入产出模型、产业链传导、碳排放核算、中美贸易摩擦和双循环政策的相关问题。';
+    }
+    
+    return '这个问题很有深度！目前的我还只能回答与投入产出模型、产业链传导、碳排放核算、中美贸易摩擦及双循环政策相关的问题。你可以试着换个方式问问我哦！';
+}
+</script></html>
